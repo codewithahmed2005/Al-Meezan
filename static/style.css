@@ -1,0 +1,85 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #f9f9f9;
+    color: #222;
+}
+
+.header {
+    background: #1f2a44;
+    color: #fff;
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.header .btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 25px;
+    background: #c9a14a;
+    color: #000;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+section {
+    padding: 50px 20px;
+    max-width: 1000px;
+    margin: auto;
+}
+
+.services {
+    background: #fff;
+}
+
+.service-box {
+    margin-bottom: 30px;
+}
+
+.consultation form {
+    display: flex;
+    flex-direction: column;
+}
+
+.consultation input,
+.consultation select,
+.consultation textarea {
+    margin-bottom: 15px;
+    padding: 12px;
+    font-size: 15px;
+}
+
+.consultation button {
+    padding: 12px;
+    background: #1f2a44;
+    color: #fff;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.whatsapp-float {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #25d366;
+    color: #fff;
+    padding: 12px 18px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    z-index: 999;
+}
+
+.whatsapp-float:hover {
+    background: #1ebe5d;
+}
+
+.footer {
+    background: #111;
+    color: #ccc;
+    text-align: center;
+    padding: 20px;
+    font-size: 14px;
+}

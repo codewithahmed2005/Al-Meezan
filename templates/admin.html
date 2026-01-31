@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel | Leads</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f3f6;
+            margin: 0;
+        }
+
+        header {
+            background: #1f2a44;
+            color: #fff;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h2 {
+            margin: 0;
+        }
+
+        header a {
+            color: #fff;
+            text-decoration: none;
+            background: #c0392b;
+            padding: 8px 14px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .container {
+            padding: 30px;
+        }
+
+        .stats {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background: #2c3e50;
+            color: #fff;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .time {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h2>Admin Dashboard</h2>
+    <a href="/admin/logout">Logout</a>
+</header>
+
+<div class="container">
+
+    <div class="stats">
+        Total Leads: <strong>{{ leads|length }}</strong>
+    </div>
+
+    <table>
+        <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Message</th>
+            <th>Time</th>
+        </tr>
+
+        {% for lead in leads %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ lead.name }}</td>
+            <td>{{ lead.phone }}</td>
+            <td>{{ lead.message }}</td>
+            <td class="time">{{ lead.created_at }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+</div>
+
+</body>
+</html>
