@@ -64,17 +64,21 @@ section {
     right: 20px;
     background: #25d366;
     color: #fff;
-    padding: 12px 18px;
+    padding: 14px 22px;
     border-radius: 50px;
     text-decoration: none;
     font-weight: bold;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    font-size: 15px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.3);
     z-index: 999;
+    transition: transform 0.2s ease;
 }
 
 .whatsapp-float:hover {
     background: #1ebe5d;
+    transform: scale(1.05);
 }
+
 
 .footer {
     background: #111;
@@ -83,3 +87,4 @@ section {
     padding: 20px;
     font-size: 14px;
 }
+
