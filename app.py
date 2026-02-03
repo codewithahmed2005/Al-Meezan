@@ -236,8 +236,11 @@ def admin_backup():
     if not session.get("admin_logged_in"):
         return redirect("/admin/login")
 
-    success = send_db_backup_email()
-    return "Backup email sent successfully." if success else "No data to backup."
+    thread = threading.Thread(target=send_db_backup_email)
+    thread.daemon = True
+    thread.start()
+
+    return "Backup is being sent in background. Check email shortly."
 
 # ---------- LOGOUT ----------
 @app.route("/admin/logout")
@@ -248,3 +251,4 @@ def admin_logout():
 # ---------- RUN ----------
 if __name__ == "__main__":
     app.run()
+
