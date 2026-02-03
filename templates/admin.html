@@ -1,15 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Admin Panel | Leads</title>
+    <title>Admin Panel</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f1f3f6;
-            margin: 0;
-        }
-
+        body { font-family: Arial; background: #f1f3f6; margin: 0; }
         header {
             background: #1f2a44;
             color: #fff;
@@ -18,54 +12,30 @@
             justify-content: space-between;
             align-items: center;
         }
-
-        header h2 {
-            margin: 0;
-        }
-
         header a {
             color: #fff;
             text-decoration: none;
             background: #c0392b;
-            padding: 8px 14px;
+            padding: 6px 12px;
             border-radius: 4px;
-            font-size: 14px;
         }
-
-        .container {
-            padding: 30px;
+        .container { padding: 30px; }
+        table { width: 100%; background: #fff; border-collapse: collapse; }
+        th, td { padding: 10px; border-bottom: 1px solid #ddd; }
+        th { background: #2c3e50; color: #fff; }
+        .new { color: red; font-weight: bold; }
+        .contacted { color: green; font-weight: bold; }
+        .actions a {
+            margin-right: 8px;
+            text-decoration: none;
+            font-size: 13px;
         }
-
-        .stats {
-            margin-bottom: 20px;
-            font-size: 16px;
+        .search-box {
+            margin-bottom: 15px;
         }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: #fff;
-        }
-
-        th, td {
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
-            text-align: left;
-            font-size: 14px;
-        }
-
-        th {
-            background: #2c3e50;
-            color: #fff;
-        }
-
-        tr:hover {
-            background: #f9f9f9;
-        }
-
-        .time {
-            font-size: 12px;
-            color: #666;
+        .search-box input {
+            padding: 8px;
+            width: 250px;
         }
     </style>
 </head>
@@ -78,26 +48,36 @@
 
 <div class="container">
 
-    <div class="stats">
-        Total Leads: <strong>{{ leads|length }}</strong>
-    </div>
+    <form class="search-box" method="get">
+        <input type="text" name="search" placeholder="Search name / phone / message" value="{{ search }}">
+        <button type="submit">Search</button>
+    </form>
+
+    <p>Total Leads: <strong>{{ leads|length }}</strong></p>
 
     <table>
         <tr>
-            <th>#</th>
+            <th>ID</th>
             <th>Name</th>
             <th>Phone</th>
             <th>Message</th>
-            <th>Time</th>
+            <th>Status</th>
+            <th>Actions</th>
         </tr>
 
         {% for lead in leads %}
         <tr>
-            <td>{{ loop.index }}</td>
+            <td>{{ lead.id }}</td>
             <td>{{ lead.name }}</td>
             <td>{{ lead.phone }}</td>
             <td>{{ lead.message }}</td>
-            <td class="time">{{ lead.created_at }}</td>
+            <td class="{{ lead.status }}">{{ lead.status }}</td>
+            <td class="actions">
+                {% if lead.status != 'contacted' %}
+                    <a href="/admin/mark/{{ lead.id }}">Mark Contacted</a>
+                {% endif %}
+                <a href="/admin/delete/{{ lead.id }}" onclick="return confirm('Delete this lead?')">Delete</a>
+            </td>
         </tr>
         {% endfor %}
     </table>
