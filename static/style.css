@@ -58,6 +58,16 @@ section {
     cursor: pointer;
 }
 
+.whatsapp-after {
+    display: inline-block;
+    background: #25d366;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
 .whatsapp-float {
     position: fixed;
     bottom: 20px;
@@ -79,7 +89,6 @@ section {
     transform: scale(1.05);
 }
 
-
 .footer {
     background: #111;
     color: #ccc;
@@ -87,4 +96,3 @@ section {
     padding: 20px;
     font-size: 14px;
 }
-
