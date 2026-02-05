@@ -1,10 +1,10 @@
 import os
 import sqlite3
 import threading
-import smtplib
-from email.message import EmailMessage
 import csv
 import io
+import base64
+import requests
 from datetime import datetime
 
 from flask import (
@@ -26,20 +26,16 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 
-EMAIL_HOST = os.getenv("EMAIL_HOST")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", "0"))
-EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+EMAIL_FROM = os.getenv("EMAIL_FROM")
 EMAIL_TO = os.getenv("EMAIL_TO")
 
 if not all([
     SECRET_KEY,
     ADMIN_USERNAME,
     ADMIN_PASSWORD,
-    EMAIL_HOST,
-    EMAIL_PORT,
-    EMAIL_USER,
-    EMAIL_PASSWORD,
+    SENDGRID_API_KEY,
+    EMAIL_FROM,
     EMAIL_TO
 ]):
     raise RuntimeError("Missing environment variables")
@@ -183,7 +179,7 @@ def delete_lead(lead_id):
 
     return redirect("/admin")
 
-# ---------- EMAIL BACKUP CORE ----------
+# ---------- EMAIL BACKUP (SENDGRID) ----------
 def send_db_backup_email():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -212,24 +208,39 @@ def send_db_backup_email():
     csv_data = output.getvalue()
     output.close()
 
-    msg = EmailMessage()
-    msg["Subject"] = f"Leads Backup - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-    msg["From"] = EMAIL_USER
-    msg["To"] = EMAIL_TO
-    msg.set_content("Attached is the latest leads database backup.")
+    encoded_csv = base64.b64encode(csv_data.encode()).decode()
 
-    msg.add_attachment(
-        csv_data,
-        subtype="csv",
-        filename="leads_backup.csv"
+    payload = {
+        "personalizations": [{
+            "to": [{"email": EMAIL_TO}],
+            "subject": "Leads Backup"
+        }],
+        "from": {"email": EMAIL_FROM},
+        "content": [{
+            "type": "text/plain",
+            "value": "Attached is the latest leads database backup."
+        }],
+        "attachments": [{
+            "content": encoded_csv,
+            "type": "text/csv",
+            "filename": "leads_backup.csv",
+            "disposition": "attachment"
+        }]
+    }
+
+    headers = {
+        "Authorization": f"Bearer {SENDGRID_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    r = requests.post(
+        "https://api.sendgrid.com/v3/mail/send",
+        json=payload,
+        headers=headers,
+        timeout=10
     )
 
-    with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
-        server.starttls()
-        server.login(EMAIL_USER, EMAIL_PASSWORD)
-        server.send_message(msg)
-
-    return True
+    return r.status_code == 202
 
 # ---------- MANUAL BACKUP ROUTE ----------
 @app.route("/admin/backup")
@@ -241,7 +252,7 @@ def admin_backup():
     thread.daemon = True
     thread.start()
 
-    return "Backup is being sent in background. Check email shortly."
+    return "Backup is being sent. Check email shortly."
 
 # ---------- LOGOUT ----------
 @app.route("/admin/logout")
@@ -252,5 +263,3 @@ def admin_logout():
 # ---------- RUN ----------
 if __name__ == "__main__":
     app.run()
-
-
