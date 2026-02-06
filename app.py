@@ -245,14 +245,16 @@ def send_db_backup_email():
 # ---------- MANUAL BACKUP ROUTE ----------
 @app.route("/admin/backup")
 def admin_backup():
-    if not session.get("admin_logged_in"):
-        return redirect("/admin/login")
+    key = request.args.get("key")
+    if key != os.getenv("BACKUP_KEY"):
+        return "Unauthorized", 403
 
     thread = threading.Thread(target=send_db_backup_email)
     thread.daemon = True
     thread.start()
 
     return "Backup is being sent. Check email shortly."
+
 
 # ---------- LOGOUT ----------
 @app.route("/admin/logout")
@@ -263,3 +265,4 @@ def admin_logout():
 # ---------- RUN ----------
 if __name__ == "__main__":
     app.run()
+
