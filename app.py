@@ -58,8 +58,7 @@ def get_db_connection():
 
 def init_db():
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS leads (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -82,6 +81,7 @@ def home():
 @app.route("/contact", methods=["POST"])
 def contact():
     data = request.get_json(force=True)
+
     name = data.get("name")
     phone = data.get("phone")
     message = data.get("message")
@@ -103,12 +103,12 @@ def contact():
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
         if (
-            request.form.get("username") == ADMIN_USERNAME and
-            check_password_hash(
-                ADMIN_PASSWORD_HASH,
-                request.form.get("password")
-            )
+            username == ADMIN_USERNAME and
+            check_password_hash(ADMIN_PASSWORD_HASH, password)
         ):
             session["admin_logged_in"] = True
             return redirect("/admin")
@@ -140,8 +140,7 @@ def send_db_backup_email():
     conn.close()
 
     if not rows:
-        print("NO DATA TO BACKUP")
-        return
+        return False
 
     output = io.StringIO()
     writer = csv.writer(output)
@@ -149,8 +148,12 @@ def send_db_backup_email():
 
     for r in rows:
         writer.writerow([
-            r["id"], r["name"], r["phone"],
-            r["message"], r["status"], r["created_at"]
+            r["id"],
+            r["name"],
+            r["phone"],
+            r["message"],
+            r["status"],
+            r["created_at"]
         ])
 
     encoded_csv = base64.b64encode(
@@ -186,8 +189,7 @@ def send_db_backup_email():
         timeout=10
     )
 
-    print("SENDGRID STATUS:", r.status_code)
-    print("SENDGRID RESPONSE:", r.text)
+    return r.status_code == 202
 
 # ---------- BACKUP ROUTE ----------
 @app.route("/admin/backup")
