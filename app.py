@@ -5,11 +5,12 @@ import csv
 import io
 import base64
 import requests
+from datetime import datetime
 
 from flask import (
     Flask, request, jsonify,
     render_template, session,
-    redirect
+    redirect, send_file
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
@@ -139,6 +140,49 @@ def admin():
     return render_template("admin.html", leads=leads)
 
 
+# ---------- DIRECT CSV DOWNLOAD ----------
+@app.route("/admin/download")
+def download_leads():
+    if not session.get("admin_logged_in"):
+        return redirect("/admin/login")
+
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT * FROM leads ORDER BY created_at DESC"
+    ).fetchall()
+    conn.close()
+
+    if not rows:
+        return "No data available"
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["ID", "Name", "Phone", "Message", "Status", "Created At"])
+
+    for r in rows:
+        writer.writerow([
+            r["id"],
+            r["name"],
+            r["phone"],
+            r["message"],
+            r["status"],
+            r["created_at"]
+        ])
+
+    memory_file = io.BytesIO()
+    memory_file.write(output.getvalue().encode())
+    memory_file.seek(0)
+
+    filename = f"leads_backup_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.csv"
+
+    return send_file(
+        memory_file,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="text/csv"
+    )
+
+
 # ---------- SENDGRID BACKUP ----------
 def send_db_backup_email():
     try:
@@ -178,12 +222,7 @@ def send_db_backup_email():
             "from": {"email": EMAIL_FROM},
             "content": [{
                 "type": "text/plain",
-                "value": (
-                    "Hello,\n\n"
-                    "This is your scheduled leads backup from AL-MEEZAN.\n\n"
-                    "Regards,\n"
-                    "AL-MEEZAN Team"
-                )
+                "value": "Leads backup attached."
             }],
             "attachments": [{
                 "content": encoded_csv,
