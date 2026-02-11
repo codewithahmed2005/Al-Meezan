@@ -50,11 +50,13 @@ app = Flask(
 )
 app.secret_key = SECRET_KEY
 
+
 # ---------- DATABASE ----------
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 def init_db():
     conn = get_db_connection()
@@ -71,12 +73,15 @@ def init_db():
     conn.commit()
     conn.close()
 
+
 init_db()
+
 
 # ---------- PUBLIC ----------
 @app.route("/")
 def home():
     return render_template("index.html")
+
 
 @app.route("/contact", methods=["POST"])
 def contact():
@@ -99,6 +104,7 @@ def contact():
 
     return jsonify({"status": "success"}), 200
 
+
 # ---------- LOGIN ----------
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
@@ -117,6 +123,7 @@ def admin_login():
 
     return render_template("login.html")
 
+
 # ---------- ADMIN ----------
 @app.route("/admin")
 def admin():
@@ -131,65 +138,80 @@ def admin():
 
     return render_template("admin.html", leads=leads)
 
+
 # ---------- SENDGRID BACKUP ----------
 def send_db_backup_email():
-    conn = get_db_connection()
-    rows = conn.execute(
-        "SELECT * FROM leads ORDER BY created_at DESC"
-    ).fetchall()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        rows = conn.execute(
+            "SELECT * FROM leads ORDER BY created_at DESC"
+        ).fetchall()
+        conn.close()
 
-    if not rows:
-        return False
+        if not rows:
+            print("No leads found. Backup skipped.")
+            return
 
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["ID", "Name", "Phone", "Message", "Status", "Created At"])
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["ID", "Name", "Phone", "Message", "Status", "Created At"])
 
-    for r in rows:
-        writer.writerow([
-            r["id"],
-            r["name"],
-            r["phone"],
-            r["message"],
-            r["status"],
-            r["created_at"]
-        ])
+        for r in rows:
+            writer.writerow([
+                r["id"],
+                r["name"],
+                r["phone"],
+                r["message"],
+                r["status"],
+                r["created_at"]
+            ])
 
-    encoded_csv = base64.b64encode(
-        output.getvalue().encode()
-    ).decode()
+        encoded_csv = base64.b64encode(
+            output.getvalue().encode()
+        ).decode()
 
-    payload = {
-        "personalizations": [{
-            "to": [{"email": EMAIL_TO}],
-            "subject": "Leads Backup"
-        }],
-        "from": {"email": EMAIL_FROM},
-        "content": [{
-            "type": "text/plain",
-            "value": "Attached is the leads backup."
-        }],
-        "attachments": [{
-            "content": encoded_csv,
-            "type": "text/csv",
-            "filename": "leads_backup.csv"
-        }]
-    }
+        payload = {
+            "personalizations": [{
+                "to": [{"email": EMAIL_TO}],
+                "subject": "AL-MEEZAN Leads Backup"
+            }],
+            "from": {"email": EMAIL_FROM},
+            "content": [{
+                "type": "text/plain",
+                "value": (
+                    "Hello,\n\n"
+                    "This is your scheduled leads backup from AL-MEEZAN.\n\n"
+                    "Regards,\n"
+                    "AL-MEEZAN Team"
+                )
+            }],
+            "attachments": [{
+                "content": encoded_csv,
+                "type": "text/csv",
+                "filename": "leads_backup.csv"
+            }]
+        }
 
-    headers = {
-        "Authorization": f"Bearer {SENDGRID_API_KEY}",
-        "Content-Type": "application/json"
-    }
+        headers = {
+            "Authorization": f"Bearer {SENDGRID_API_KEY}",
+            "Content-Type": "application/json"
+        }
 
-    r = requests.post(
-        "https://api.sendgrid.com/v3/mail/send",
-        json=payload,
-        headers=headers,
-        timeout=10
-    )
+        response = requests.post(
+            "https://api.sendgrid.com/v3/mail/send",
+            json=payload,
+            headers=headers,
+            timeout=15
+        )
 
-    return r.status_code == 202
+        print("SendGrid Status:", response.status_code)
+
+        if response.status_code != 202:
+            print("SendGrid Error:", response.text)
+
+    except Exception as e:
+        print("Backup Error:", str(e))
+
 
 # ---------- BACKUP ROUTE ----------
 @app.route("/admin/backup")
@@ -204,11 +226,13 @@ def admin_backup():
 
     return "Backup triggered"
 
+
 # ---------- LOGOUT ----------
 @app.route("/admin/logout")
 def admin_logout():
     session.clear()
     return redirect("/admin/login")
+
 
 # ---------- RUN ----------
 if __name__ == "__main__":
