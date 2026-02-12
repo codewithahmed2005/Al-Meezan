@@ -54,22 +54,19 @@ app = Flask(
 
 app.secret_key = SECRET_KEY
 
-# Secure session cookies
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax"
 )
 
-# ---------- SIMPLE RATE LIMIT ----------
+# ---------- RATE LIMIT ----------
 REQUEST_LOG = {}
-
 
 # ---------- DATABASE ----------
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
-
 
 def init_db():
     conn = get_db_connection()
@@ -86,7 +83,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-
 init_db()
 
 
@@ -99,7 +95,6 @@ def home():
 @app.route("/contact", methods=["POST"])
 def contact():
 
-    # -------- RATE LIMIT --------
     ip = request.remote_addr
     now = time.time()
 
@@ -109,14 +104,12 @@ def contact():
 
     REQUEST_LOG[ip] = now
 
-    # -------- INPUT --------
     data = request.get_json(force=True)
 
     name = data.get("name", "").strip()
     phone = data.get("phone", "").strip()
     message = data.get("message", "").strip()
 
-    # -------- VALIDATION --------
     if (
         not name or
         not phone or
@@ -164,20 +157,28 @@ def admin():
     if not session.get("admin_logged_in"):
         return redirect("/admin/login")
 
+    search = request.args.get("search", "").strip()
+
     conn = get_db_connection()
 
-    leads = conn.execute(
-        "SELECT * FROM leads ORDER BY created_at DESC"
-    ).fetchall()
+    if search:
+        leads = conn.execute(
+            """
+            SELECT * FROM leads
+            WHERE name LIKE ? OR phone LIKE ? OR message LIKE ?
+            ORDER BY created_at DESC
+            """,
+            (f"%{search}%", f"%{search}%", f"%{search}%")
+        ).fetchall()
+    else:
+        leads = conn.execute(
+            "SELECT * FROM leads ORDER BY created_at DESC"
+        ).fetchall()
 
-    total = conn.execute(
-        "SELECT COUNT(*) FROM leads"
-    ).fetchone()[0]
-
+    total = conn.execute("SELECT COUNT(*) FROM leads").fetchone()[0]
     new_count = conn.execute(
         "SELECT COUNT(*) FROM leads WHERE status='new'"
     ).fetchone()[0]
-
     contacted_count = conn.execute(
         "SELECT COUNT(*) FROM leads WHERE status='contacted'"
     ).fetchone()[0]
@@ -189,7 +190,8 @@ def admin():
         leads=leads,
         total=total,
         new_count=new_count,
-        contacted_count=contacted_count
+        contacted_count=contacted_count,
+        search=search
     )
 
 
@@ -210,7 +212,7 @@ def mark_contacted(lead_id):
     return redirect("/admin")
 
 
-# ---------- DELETE LEAD ----------
+# ---------- DELETE ----------
 @app.route("/admin/delete/<int:lead_id>")
 def delete_lead(lead_id):
     if not session.get("admin_logged_in"):
@@ -227,7 +229,7 @@ def delete_lead(lead_id):
     return redirect("/admin")
 
 
-# ---------- DIRECT CSV DOWNLOAD ----------
+# ---------- CSV DOWNLOAD ----------
 @app.route("/admin/download")
 def download_leads():
     if not session.get("admin_logged_in"):
@@ -297,9 +299,7 @@ def send_db_backup_email():
                 r["created_at"]
             ])
 
-        encoded_csv = base64.b64encode(
-            output.getvalue().encode()
-        ).decode()
+        encoded_csv = base64.b64encode(output.getvalue().encode()).decode()
 
         payload = {
             "personalizations": [{
@@ -363,4 +363,3 @@ def admin_logout():
 # ---------- RUN ----------
 if __name__ == "__main__":
     app.run()
-
