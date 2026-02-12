@@ -165,12 +165,32 @@ def admin():
         return redirect("/admin/login")
 
     conn = get_db_connection()
+
     leads = conn.execute(
         "SELECT * FROM leads ORDER BY created_at DESC"
     ).fetchall()
+
+    total = conn.execute(
+        "SELECT COUNT(*) FROM leads"
+    ).fetchone()[0]
+
+    new_count = conn.execute(
+        "SELECT COUNT(*) FROM leads WHERE status='new'"
+    ).fetchone()[0]
+
+    contacted_count = conn.execute(
+        "SELECT COUNT(*) FROM leads WHERE status='contacted'"
+    ).fetchone()[0]
+
     conn.close()
 
-    return render_template("admin.html", leads=leads)
+    return render_template(
+        "admin.html",
+        leads=leads,
+        total=total,
+        new_count=new_count,
+        contacted_count=contacted_count
+    )
 
 
 # ---------- MARK CONTACTED ----------
@@ -343,3 +363,4 @@ def admin_logout():
 # ---------- RUN ----------
 if __name__ == "__main__":
     app.run()
+
