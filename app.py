@@ -5,6 +5,7 @@ import csv
 import io
 import base64
 import requests
+import time
 from datetime import datetime
 
 from flask import (
@@ -14,6 +15,7 @@ from flask import (
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
+
 
 # ---------- LOAD ENV ----------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -49,7 +51,17 @@ app = Flask(
     template_folder=os.path.join(BASE_DIR, "templates"),
     static_folder=os.path.join(BASE_DIR, "static")
 )
+
 app.secret_key = SECRET_KEY
+
+# Secure session cookies
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax"
+)
+
+# ---------- SIMPLE RATE LIMIT ----------
+REQUEST_LOG = {}
 
 
 # ---------- DATABASE ----------
@@ -86,13 +98,33 @@ def home():
 
 @app.route("/contact", methods=["POST"])
 def contact():
+
+    # -------- RATE LIMIT --------
+    ip = request.remote_addr
+    now = time.time()
+
+    if ip in REQUEST_LOG:
+        if now - REQUEST_LOG[ip] < 5:
+            return jsonify({"status": "too_many_requests"}), 429
+
+    REQUEST_LOG[ip] = now
+
+    # -------- INPUT --------
     data = request.get_json(force=True)
 
-    name = data.get("name")
-    phone = data.get("phone")
-    message = data.get("message")
+    name = data.get("name", "").strip()
+    phone = data.get("phone", "").strip()
+    message = data.get("message", "").strip()
 
-    if not name or not phone or not message:
+    # -------- VALIDATION --------
+    if (
+        not name or
+        not phone or
+        not message or
+        len(name) > 100 or
+        len(phone) > 20 or
+        len(message) > 1000
+    ):
         return jsonify({"status": "error"}), 400
 
     conn = get_db_connection()
@@ -110,8 +142,9 @@ def contact():
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
+
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
 
         if (
             username == ADMIN_USERNAME and
