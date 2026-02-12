@@ -91,6 +91,9 @@ init_db()
 def home():
     return render_template("index.html")
 
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html", year=datetime.now().year)
 
 @app.route("/contact", methods=["POST"])
 def contact():
@@ -363,4 +366,5 @@ def admin_logout():
 # ---------- RUN ----------
 if __name__ == "__main__":
     app.run()
+
 
