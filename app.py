@@ -125,7 +125,7 @@ def admin_login():
     return render_template("login.html")
 
 
-# ---------- ADMIN ----------
+# ---------- ADMIN DASHBOARD ----------
 @app.route("/admin")
 def admin():
     if not session.get("admin_logged_in"):
@@ -138,6 +138,40 @@ def admin():
     conn.close()
 
     return render_template("admin.html", leads=leads)
+
+
+# ---------- MARK CONTACTED ----------
+@app.route("/admin/mark/<int:lead_id>")
+def mark_contacted(lead_id):
+    if not session.get("admin_logged_in"):
+        return redirect("/admin/login")
+
+    conn = get_db_connection()
+    conn.execute(
+        "UPDATE leads SET status='contacted' WHERE id=?",
+        (lead_id,)
+    )
+    conn.commit()
+    conn.close()
+
+    return redirect("/admin")
+
+
+# ---------- DELETE LEAD ----------
+@app.route("/admin/delete/<int:lead_id>")
+def delete_lead(lead_id):
+    if not session.get("admin_logged_in"):
+        return redirect("/admin/login")
+
+    conn = get_db_connection()
+    conn.execute(
+        "DELETE FROM leads WHERE id=?",
+        (lead_id,)
+    )
+    conn.commit()
+    conn.close()
+
+    return redirect("/admin")
 
 
 # ---------- DIRECT CSV DOWNLOAD ----------
