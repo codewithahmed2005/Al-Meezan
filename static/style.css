@@ -90,9 +90,12 @@ section {
 }
 
 .footer {
-    background: #111;
+    margin-top:40px;
+    padding:20px;
+    background:#1f2a44;
+    text-align:center;
     color: #ccc;
     text-align: center;
-    padding: 20px;
     font-size: 14px;
 }
+
